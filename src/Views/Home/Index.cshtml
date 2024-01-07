@@ -1,0 +1,45 @@
+﻿@{
+    ViewBag.Title = "Hangman";
+}
+
+<h2>Hangman Game</h2>
+
+<!-- Display the current state of the word -->
+<p>Word: @ViewBag.CurrentState</p>
+
+<!-- Display incorrect guesses -->
+<p>Incorrect Guesses: @ViewBag.IncorrectGuesses</p>
+
+<form method="post" action="/Home/MakeGuess">
+    <label for="guess">Enter your guess (one letter):</label>
+    <input type="text" id="guess" name="guess" maxlength="1" autocomplete="off" required />
+    <button type="submit">Guess!</button>
+</form>
+
+@if (TempData["Error"] != null)
+{
+    <p style="color:red">@TempData["Error"]</p>
+}
+
+@if (ViewBag.GameEnd)
+{
+    <br/>
+    <br/>
+    @if (ViewBag.CelebrationMessage is not null or "")
+    {
+        if (ViewBag.GameWin)
+        {
+            <div style="color:green; font-size:20px;">
+                @ViewBag.CelebrationMessage
+            </div>
+        }
+        else
+        {
+            <div style="color:red; font-size:20px;">
+                @ViewBag.CelebrationMessage
+            </div>
+        }
+    }
+    <br/>
+    <p>A new game will start now.</p>
+}
