@@ -22,7 +22,7 @@ public static class DependencyInjectionExtensions
         services.AddDistributedMemoryCache();
         services.AddSession(options =>
         {
-            options.IdleTimeout = TimeSpan.FromSeconds(20);  // User has 20 seconds to make guesses
+            options.IdleTimeout = TimeSpan.FromSeconds(20);  // User has 20 seconds to make a guess, resets after each guess.
             options.Cookie.HttpOnly = true;
             options.Cookie.IsEssential = true;
         });
