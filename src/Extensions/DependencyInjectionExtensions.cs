@@ -22,8 +22,8 @@ public static class DependencyInjectionExtensions
         services.AddDistributedMemoryCache();
         services.AddSession(options =>
         {
-            options.IdleTimeout = TimeSpan.FromSeconds(20);  // User has 20 seconds to make a guess, resets after each guess.
-            options.Cookie.HttpOnly = true;
+            options.IdleTimeout = TimeSpan.FromSeconds(20);  // User has 20 seconds to make a guess, resets after each guess,
+            options.Cookie.HttpOnly = true;                  // if user takes too long, we start new session.
             options.Cookie.IsEssential = true;
         });
         
