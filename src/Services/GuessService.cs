@@ -16,6 +16,11 @@ public sealed class GuessService : IGuessService
     private const string ViewBagDefeatMessage = "Alas, you failed to guess: ";
     private const string GoAgain = ". Let's try again!";
 
+    private const string SessionWord = "RandomWord"; 
+    private const string SessionStatus = "GameStatus"; 
+    private const string SessionIncorrectGuesses = "IncorrectGuesses"; 
+    private const string SessionCorrectGuesses = "CorrectGuesses"; 
+
     public GuessService(ILogger<GuessService> logger, IHttpContextAccessor contextAccessor,
         IRandomWordService randomWordService, IPerformanceLogger performance)
     {
@@ -33,7 +38,7 @@ public sealed class GuessService : IGuessService
                           throw new ArgumentNullException(nameof(_contextAccessor.HttpContext),
                               "Could not resolve http context.");
 
-            Enum.TryParse(context.Session.GetString("GameStatus") ?? "Ongoing", true,
+            Enum.TryParse(context.Session.GetString(SessionStatus) ?? "Ongoing", true,
                 out GameStatus status);
 
             var gameEnded = false;
@@ -55,12 +60,12 @@ public sealed class GuessService : IGuessService
                 await StartNewSession(context);
             }
 
-            var word = GetSessionString(context, "RandomWord");
+            var word = GetSessionString(context, SessionWord);
             if (string.IsNullOrWhiteSpace(word))
                 word = await GetNewWord(context);
 
-            var guessedLetters = GetSessionString(context, "CorrectGuesses");
-            var incorrectGuesses = GetSessionString(context, "IncorrectGuesses");
+            var guessedLetters = GetSessionString(context, SessionCorrectGuesses);
+            var incorrectGuesses = GetSessionString(context, SessionIncorrectGuesses);
 
             var displayWord = SetDisplayWordValues(word, guessedLetters);
 
@@ -79,7 +84,7 @@ public sealed class GuessService : IGuessService
 
     private static string AppendWordAndEndToMessage(HttpContext context)
     {
-        return GetSessionString(context, "RandomWord") + GoAgain;
+        return GetSessionString(context, SessionWord) + GoAgain;
     }
 
     private async Task StartNewSession(HttpContext context)
@@ -101,6 +106,14 @@ public sealed class GuessService : IGuessService
         {
             word = await _randomWordService.GetRandomWord();
         }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (ArgumentNullException)
+        {
+            throw;
+        }
         catch (Exception e)
         {
             _logger.LogWarning(new EventId(1, "Exception retrieving new word"), e,
@@ -108,7 +121,7 @@ public sealed class GuessService : IGuessService
             throw;
         }
 
-        SetSessionString(context, "RandomWord", word);
+        SetSessionString(context, SessionWord, word);
 
         return word;
     }
@@ -141,23 +154,23 @@ public sealed class GuessService : IGuessService
 
             VerifyGuess(context, guess);
 
-            var word = GetSessionString(context, "RandomWord");
-            var correctGuesses = GetSessionString(context, "CorrectGuesses");
-            var incorrectGuesses = GetSessionString(context, "IncorrectGuesses");
+            var word = GetSessionString(context, SessionWord);
+            var correctGuesses = GetSessionString(context, SessionCorrectGuesses);
+            var incorrectGuesses = GetSessionString(context, SessionIncorrectGuesses);
 
             if (word.All(letter => correctGuesses.Contains(letter)))
             {
                 _logger.LogDebug(
                     "Game Won; word: {activeWord}. Correct guesses: {guesses}. Incorrect guessed letters: {incorrectGuesses}.",
                     word, correctGuesses, incorrectGuesses);
-                SetSessionString(context, "GameStatus", GameStatus.Win.ToString());
+                SetSessionString(context, SessionStatus, GameStatus.Win.ToString());
             }
             else if (incorrectGuesses?.Length > MaxGuesses)
             {
                 _logger.LogInformation(
                     "Game Failed; word: {activeWord}. Correct guesses: {guesses}. Guessed letters: {incorrectGuesses}.",
                     word, correctGuesses, incorrectGuesses);
-                SetSessionString(context, "GameStatus", GameStatus.Defeat.ToString());
+                SetSessionString(context, SessionStatus, GameStatus.Defeat.ToString());
             }
             else
             {
@@ -165,7 +178,7 @@ public sealed class GuessService : IGuessService
                     "Game ongoing; word: {activeWord}. Correct guesses: {guesses}. Guessed letters: {incorrectGuesses}. " +
                     "Number of chances left: {noTriesLeft}", word, correctGuesses, incorrectGuesses,
                     MaxGuesses - incorrectGuesses?.Length);
-                SetSessionString(context, "GameStatus", GameStatus.Ongoing.ToString());
+                SetSessionString(context, SessionStatus, GameStatus.Ongoing.ToString());
             }
         }
     }
@@ -174,15 +187,15 @@ public sealed class GuessService : IGuessService
     {
         using (_performance.TrackPerformance(nameof(VerifyGuess)))
         {
-            var word = GetSessionString(context, "RandomWord");
+            var word = GetSessionString(context, SessionWord);
 
             if (word is "")
             {
                 throw new TimeoutException("No word found in session. Starting new game.");
             }
 
-            var correctGuesses = GetSessionString(context, "CorrectGuesses");
-            var incorrectGuesses = GetSessionString(context, "IncorrectGuesses").ToList();
+            var correctGuesses = GetSessionString(context, SessionCorrectGuesses);
+            var incorrectGuesses = GetSessionString(context, SessionIncorrectGuesses).ToList();
 
             // Check if the letter has already been guessed
             if (correctGuesses.Contains(guess) || incorrectGuesses.Contains(guess))
@@ -200,8 +213,8 @@ public sealed class GuessService : IGuessService
                 incorrectGuesses.Add(guess);
             }
 
-            SetSessionString(context, "CorrectGuesses", correctGuesses);
-            SetSessionString(context, "IncorrectGuesses", new string(incorrectGuesses.ToArray()));
+            SetSessionString(context, SessionCorrectGuesses, correctGuesses);
+            SetSessionString(context, SessionIncorrectGuesses, new string(incorrectGuesses.ToArray()));
         }
     }
 }

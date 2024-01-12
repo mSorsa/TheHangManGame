@@ -34,9 +34,16 @@ public sealed class RandomWordService : IRandomWordService
                 return words?.FirstOrDefault() ??
                        throw new ArgumentNullException(nameof(words), "Random-word-api returned invalid response.");
             }
-            catch (HttpRequestException e)
+            catch (HttpRequestException httpException)
             {
-                _logger.LogError(e, "Failure to retrieve random word. Exception: {message}", e.Message);
+                _logger.LogError(httpException, "Failure to retrieve random word. Exception: {message}",
+                    httpException.Message);
+                throw;
+            }
+            catch (ArgumentNullException nullException)
+            {
+                _logger.LogError(nullException, "Word retrieved from Random Word Api is null. Exception: {message}",
+                    nullException.Message);
                 throw;
             }
         }

@@ -16,8 +16,6 @@ public sealed class PerformanceTracker : IAsyncDisposable, IDisposable
         _message = message;
     }
 
-    /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously.</summary>
-    /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public ValueTask DisposeAsync()
     {
         _timer.Stop();
@@ -27,7 +25,6 @@ public sealed class PerformanceTracker : IAsyncDisposable, IDisposable
         return ValueTask.CompletedTask;
     }
 
-    /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
     public void Dispose()
     {
         _timer.Stop();
